@@ -1,459 +1,155 @@
 <!DOCTYPE html>
 <html data-theme="dark">
 <head>
-  <title>DataTables Viewer</title>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@yohns/picocss@2.2.2/css/pico.min.css" />
-  <style>
-    /*.header-cell {
-      cursor: pointer;
-      user-select: none;
-      position: relative;
-    }
-    .sort-indicator::after {
-      content: '↕️';
-      margin-left: 5px;
-    }
-    .sort-asc::after {
-      content: '↑';
-    }
-    .sort-desc::after {
-      content: '↓';
-    }
-    .column-toggle-menu {
-      position: absolute;
-      background: var(--pico-background-color);
-      border: 1px solid var(--pico-border-color);
-      border-radius: var(--pico-border-radius);
-      padding: 1rem;
-      z-index: 1000;
-      min-width: 200px;
-    }
-    .hidden {
-      display: none;
-    }
-    .table-controls {
-      display: flex;
-      gap: 1rem;
-      align-items: center;
-      margin-bottom: 1rem;
-    }
-    .table-controls input[type="search"] {
-      margin: 0;
-    }
-    .pagination {
-      display: flex;
-      gap: 1rem;
-      align-items: center;
-      margin-top: 1rem;
-    }
-    tfoot input {
-      width: 100%;
-      margin: 0;
-      padding: 0.25rem;
-    }
-    tfoot select {
-      width: 100%;
-      margin: 0;
-      padding: 0.25rem;
-    }
-    .loading {
-      text-align: center;
-      padding: 2rem;
-    } */
-  </style>
+	<title>DataTables Viewer</title>
+	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@yohns/picocss@latest/css/pico.min.css" />
+	<style>
+		.header-cell {
+			cursor: pointer;
+			user-select: none;
+			position: relative;
+		}
+
+		.sort-indicator::after {
+			content: '↕';
+			margin-left: 5px;
+		}
+
+		.sort-asc::after {
+			content: '↑';
+		}
+
+		.sort-desc::after {
+			content: '↓';
+		}
+
+		.column-toggle-menu {
+			position: absolute;
+			background: var(--pico-background-color);
+			border: 1px solid var(--pico-border-color);
+			border-radius: var(--pico-border-radius);
+			padding: 1rem;
+			z-index: 1000;
+			min-width: 200px;
+		}
+
+		.hidden {
+			display: none;
+		}
+
+		.table-controls {
+			margin-bottom: 1rem;
+		}
+
+		.table-controls input[type="search"] {
+			margin: 0;
+		}
+
+		.pagination {
+			display: flex;
+			gap: 1rem;
+			align-items: center;
+			margin-top: 1rem;
+		}
+
+		.loading {
+			text-align: center;
+			padding: 2rem;
+		}
+	</style>
 </head>
 <body>
-  <main class="container">
-    <h1>DataTables Viewer</h1>
-    
-    <div id="tableControls" class="table-controls">
-		<nav>
-			<ul>
-				<li>
-		      <div style="flex-grow: 1;">
-    		    <input type="search" id="globalSearch" placeholder="Search all columns...">
-		      </div>
-				</li>
-			</ul>
-			<ul>
-				<li>
-					<select id="rowsPerPage">
-        	  <option value="5">5 rows</option>
-      	    <option value="10">10 rows</option>
-    	      <option value="25">25 rows</option>
-  	        <option value="50">50 rows</option>
-	        </select>
-				</li>
-				<li>
-	        <button id="toggleColumnsBtn">Toggle Columns</button>
-				</li>
-			</ul>
-		</nav>
+	<main class="container">
+		<h1>DataTables Viewer</h1>
+		<div id="tableControls" class="table-controls">
+			<nav>
+				<ul>
+					<li>
+						<div style="flex-grow: 1;">
+							<input type="search" id="globalSearch" placeholder="Search all columns...">
+						</div>
+					</li>
+				</ul>
+				<ul>
+					<li>
+						<select id="rowsPerPage">
+							<option value="5">5 rows</option>
+							<option value="10">10 rows</option>
+							<option value="25">25 rows</option>
+							<option value="50">50 rows</option>
+						</select>
+					</li>
+					<li>
+						<button id="toggleColumnsBtn">Toggle Columns</button>
+					</li>
+				</ul>
+			</nav>
 		</div>
-		
-    <div id="columnToggleMenu" class="column-toggle-menu hidden"></div>
-    <div id="tableContainer"></div>
-  </main>
+		<div id="columnToggleMenu" class="column-toggle-menu hidden"></div>
+		<div id="tableContainer"></div>
+	</main>
+	<script src="src/DataTableViewer.js"></script>
+	<script>
+		// Sample data for preview - replace with your actual data
+		const sampleData = [{ id: 1, name: "John Doe", date: "2024-01-01", status: "Active" },
+		{ id: 2, name: "Jane Smith", date: "2024-01-02", status: "Inactive" },
+		{ id: 3, name: "Bob Johnson", date: "2024-01-03", status: "Active" },
+		{ id: 4, name: "Alice Brown", date: "2024-01-04", status: "Inactive" },
+		{ id: 5, name: "Charlie Davis", date: "2024-01-05", status: "Active" },
+		{ id: 6, name: "Diana Evans", date: "2024-01-06", status: "Inactive" },
+		{ id: 7, name: "Frank Green", date: "2024-01-07", status: "Active" },
+		{ id: 8, name: "Grace Hall", date: "2024-01-08", status: "Inactive" },
+		{ id: 9, name: "Henry Lewis", date: "2024-01-09", status: "Active" },
+		{ id: 10, name: "Irene Martinez", date: "2024-01-10", status: "Inactive" },
+		{ id: 11, name: "Jack Nelson", date: "2024-01-11", status: "Active" },
+		{ id: 12, name: "Karen Olson", date: "2024-01-12", status: "Inactive" },
+		{ id: 13, name: "Larry Parker", date: "2024-01-13", status: "Active" },
+		{ id: 14, name: "Megan Quinn", date: "2024-01-14", status: "Inactive" },
+		{ id: 15, name: "Nick Roberts", date: "2024-01-15", status: "Active" },
+		{ id: 16, name: "Olivia Scott", date: "2024-01-16", status: "Inactive" },
+		{ id: 17, name: "Peter Taylor", date: "2024-01-17", status: "Active" },
+		{ id: 18, name: "Quinn Underwood", date: "2024-01-18", status: "Inactive" },
+		{ id: 19, name: "Rachel Vaughn", date: "2024-01-19", status: "Active" },
+		{ id: 20, name: "Steve Walker", date: "2024-01-20", status: "Inactive" },
+		{ id: 21, name: "Tina Young", date: "2024-01-21", status: "Active" },
+		{ id: 22, name: "Victor Zane", date: "2024-01-22", status: "Inactive" },
+		{ id: 23, name: "Wendy Adams", date: "2024-01-23", status: "Active" },
+		{ id: 24, name: "Xander Brooks", date: "2024-01-24", status: "Inactive" },
+		{ id: 25, name: "Yvonne Carter", date: "2024-01-25", status: "Active" },
+		{ id: 26, name: "Zack Daniels", date: "2024-01-26", status: "Inactive" },
+		{ id: 27, name: "Aaron Edwards", date: "2024-01-27", status: "Active" },
+		{ id: 28, name: "Bella Fisher", date: "2024-01-28", status: "Inactive" },
+		{ id: 29, name: "Caleb Garcia", date: "2024-01-29", status: "Active" },
+		{ id: 30, name: "Daisy Howard", date: "2024-01-30", status: "Inactive" },
+		{ id: 31, name: "Ethan Iverson", date: "2024-01-31", status: "Active" },
+		{ id: 32, name: "Fiona Jackson", date: "2024-02-01", status: "Inactive" },
+		{ id: 33, name: "George Kelly", date: "2024-02-02", status: "Active" },
+		{ id: 34, name: "Hannah Lopez", date: "2024-02-03", status: "Inactive" },
+		{ id: 35, name: "Ian Moore", date: "2024-02-04", status: "Active" },
+		{ id: 36, name: "Julia Newton", date: "2024-02-05", status: "Inactive" },
+		{ id: 37, name: "Kyle Owens", date: "2024-02-06", status: "Active" },
+		{ id: 38, name: "Liam Peterson", date: "2024-02-07", status: "Inactive" },
+		{ id: 39, name: "Mia Quinn", date: "2024-02-08", status: "Active" },
+		{ id: 40, name: "Noah Rivers", date: "2024-02-09", status: "Inactive" },
+		];
 
-  <script>
-    // Sample data for preview - replace with your actual data
-    const sampleData = [	{ id: 1, name: "John Doe", date: "2024-01-01", status: "Active" },
-	{ id: 2, name: "Jane Smith", date: "2024-01-02", status: "Inactive" },
-	{ id: 3, name: "Bob Johnson", date: "2024-01-03", status: "Active" },
-	{ id: 4, name: "Alice Brown", date: "2024-01-04", status: "Inactive" },
-	{ id: 5, name: "Charlie Davis", date: "2024-01-05", status: "Active" },
-	{ id: 6, name: "Diana Evans", date: "2024-01-06", status: "Inactive" },
-	{ id: 7, name: "Frank Green", date: "2024-01-07", status: "Active" },
-	{ id: 8, name: "Grace Hall", date: "2024-01-08", status: "Inactive" },
-	{ id: 9, name: "Henry Lewis", date: "2024-01-09", status: "Active" },
-	{ id: 10, name: "Irene Martinez", date: "2024-01-10", status: "Inactive" },
-	{ id: 11, name: "Jack Nelson", date: "2024-01-11", status: "Active" },
-	{ id: 12, name: "Karen Olson", date: "2024-01-12", status: "Inactive" },
-	{ id: 13, name: "Larry Parker", date: "2024-01-13", status: "Active" },
-	{ id: 14, name: "Megan Quinn", date: "2024-01-14", status: "Inactive" },
-	{ id: 15, name: "Nick Roberts", date: "2024-01-15", status: "Active" },
-	{ id: 16, name: "Olivia Scott", date: "2024-01-16", status: "Inactive" },
-	{ id: 17, name: "Peter Taylor", date: "2024-01-17", status: "Active" },
-	{ id: 18, name: "Quinn Underwood", date: "2024-01-18", status: "Inactive" },
-	{ id: 19, name: "Rachel Vaughn", date: "2024-01-19", status: "Active" },
-	{ id: 20, name: "Steve Walker", date: "2024-01-20", status: "Inactive" },
-	{ id: 21, name: "Tina Young", date: "2024-01-21", status: "Active" },
-	{ id: 22, name: "Victor Zane", date: "2024-01-22", status: "Inactive" },
-	{ id: 23, name: "Wendy Adams", date: "2024-01-23", status: "Active" },
-	{ id: 24, name: "Xander Brooks", date: "2024-01-24", status: "Inactive" },
-	{ id: 25, name: "Yvonne Carter", date: "2024-01-25", status: "Active" },
-	{ id: 26, name: "Zack Daniels", date: "2024-01-26", status: "Inactive" },
-	{ id: 27, name: "Aaron Edwards", date: "2024-01-27", status: "Active" },
-	{ id: 28, name: "Bella Fisher", date: "2024-01-28", status: "Inactive" },
-	{ id: 29, name: "Caleb Garcia", date: "2024-01-29", status: "Active" },
-	{ id: 30, name: "Daisy Howard", date: "2024-01-30", status: "Inactive" },
-	{ id: 31, name: "Ethan Iverson", date: "2024-01-31", status: "Active" },
-	{ id: 32, name: "Fiona Jackson", date: "2024-02-01", status: "Inactive" },
-	{ id: 33, name: "George Kelly", date: "2024-02-02", status: "Active" },
-	{ id: 34, name: "Hannah Lopez", date: "2024-02-03", status: "Inactive" },
-	{ id: 35, name: "Ian Moore", date: "2024-02-04", status: "Active" },
-	{ id: 36, name: "Julia Newton", date: "2024-02-05", status: "Inactive" },
-	{ id: 37, name: "Kyle Owens", date: "2024-02-06", status: "Active" },
-	{ id: 38, name: "Liam Peterson", date: "2024-02-07", status: "Inactive" },
-	{ id: 39, name: "Mia Quinn", date: "2024-02-08", status: "Active" },
-	{ id: 40, name: "Noah Rivers", date: "2024-02-09", status: "Inactive" },
-    ];
 
-    class DataTableViewer {
-      constructor(config) {
-        this.config = {
-          dataUrl: config.dataUrl,
-          editEndpoint: config.editEndpoint || '',
-          extraEditData: config.extraEditData || {},
-          onEditSuccess: config.onEditSuccess || ((response) => console.log('Edit success:', response)),
-          columns: config.columns || [],
-          rowsPerPage: config.rowsPerPage || 10,
-          container: config.container || document.getElementById('tableContainer')
-        };
-        
-        this.data = [];
-        this.filteredData = [];
-        this.currentPage = 1;
-        this.sortColumn = null;
-        this.sortDirection = 'asc';
-        this.columnSearchValues = {};
-        this.globalSearchValue = '';
-        this.hiddenColumns = new Set();
-        
-        this.init();
-      }
 
-      async init() {
-        await this.loadData();
-        this.setupControls();
-        this.render();
-      }
-
-      async loadData() {
-        this.config.container.innerHTML = '<div class="loading">Loading data...</div>';
-        try {
-          if (this.config.dataUrl) {
-            const response = await fetch(this.config.dataUrl);
-            this.data = await response.json();
-          } else {
-            // Use sample data for preview
-            this.data = sampleData;
-          }
-          this.filteredData = [...this.data];
-        } catch (error) {
-          console.error('Error loading data:', error);
-          this.config.container.innerHTML = '<div class="error">Error loading data</div>';
-        }
-      }
-
-      setupControls() {
-        // Global search
-        document.getElementById('globalSearch').addEventListener('input', (e) => {
-          this.globalSearchValue = e.target.value.toLowerCase();
-          this.filterData();
-          this.currentPage = 1;
-          this.render();
-        });
-
-        // Rows per page
-        document.getElementById('rowsPerPage').addEventListener('change', (e) => {
-          this.config.rowsPerPage = parseInt(e.target.value);
-          this.currentPage = 1;
-          this.render();
-        });
-
-        // Column toggle menu
-        const toggleBtn = document.getElementById('toggleColumnsBtn');
-        const menu = document.getElementById('columnToggleMenu');
-        
-        toggleBtn.addEventListener('click', () => {
-          menu.classList.toggle('hidden');
-          menu.style.top = `${toggleBtn.offsetTop + toggleBtn.offsetHeight}px`;
-          menu.style.left = `${toggleBtn.offsetLeft}px`;
-          
-          menu.innerHTML = this.config.columns.map(col => `
-            <label>
-              <input type="checkbox" 
-                     ${!this.hiddenColumns.has(col.field) ? 'checked' : ''}
-                     data-column="${col.field}">
-              ${col.title}
-            </label>
-          `).join('');
-        });
-
-        menu.addEventListener('change', (e) => {
-          if (e.target.matches('input[type="checkbox"]')) {
-            const column = e.target.dataset.column;
-            if (e.target.checked) {
-              this.hiddenColumns.delete(column);
-            } else {
-              this.hiddenColumns.add(column);
-            }
-            this.render();
-          }
-        });
-
-        // Close menu when clicking outside
-        document.addEventListener('click', (e) => {
-          if (!menu.contains(e.target) && e.target !== toggleBtn) {
-            menu.classList.add('hidden');
-          }
-        });
-      }
-filterData() {
-        this.filteredData = this.data.filter(row => {
-          // Global search
-          if (this.globalSearchValue) {
-            const rowString = Object.values(row).join(' ').toLowerCase();
-            if (!rowString.includes(this.globalSearchValue)) return false;
-          }
-
-          // Column-specific search
-          return Object.entries(this.columnSearchValues).every(([field, searchValue]) => {
-            if (!searchValue) return true;
-            const value = String(row[field]).toLowerCase();
-            // For select type columns, do exact match
-            const col = this.config.columns.find(c => c.field === field);
-            if (col?.searchType === 'select') {
-              return value === searchValue.toLowerCase();
-            }
-            // For text type columns, do contains match
-            return value.includes(searchValue.toLowerCase());
-          });
-        });
-      }
-
-      sortData(column) {
-        if (this.sortColumn === column) {
-          this.sortDirection = this.sortDirection === 'asc' ? 'desc' : 'asc';
-        } else {
-          this.sortColumn = column;
-          this.sortDirection = 'asc';
-        }
-
-        const col = this.config.columns.find(c => c.field === column);
-        
-        this.filteredData.sort((a, b) => {
-          let valA = a[column];
-          let valB = b[column];
-
-          if (col.type === 'date') {
-            valA = new Date(valA);
-            valB = new Date(valB);
-          }
-
-          if (valA < valB) return this.sortDirection === 'desc' ? 1 : -1;  // Changed this line
-          if (valA > valB) return this.sortDirection === 'desc' ? -1 : 1;  // Changed this line
-          return 0;
-        });
-
-        this.render();
-      }
-
-      async handleEdit(rowIndex, row) {
-        try {
-          const response = await fetch(this.config.editEndpoint, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-              ...row,
-              ...this.config.extraEditData
-            })
-          });
-
-          if (!response.ok) throw new Error('Edit failed');
-          
-          const result = await response.json();
-          this.config.onEditSuccess(result);
-          
-          // Update local data
-          Object.assign(this.data[rowIndex], row);
-          this.filterData();
-          this.render();
-          
-        } catch (error) {
-          console.error('Error saving edit:', error);
-          alert('Failed to save changes');
-        }
-      }
-
-      render() {
-        const visibleColumns = this.config.columns.filter(col => !this.hiddenColumns.has(col.field));
-        const startIndex = (this.currentPage - 1) * this.config.rowsPerPage;
-        const endIndex = startIndex + this.config.rowsPerPage;
-        const pageData = this.filteredData.slice(startIndex, endIndex);
-
-        this.config.container.innerHTML = `
-          <table>
-            <thead>
-              <tr>
-                <th>Edit</th>
-                ${visibleColumns.map(col => `
-                  <th class="header-cell ${this.sortColumn === col.field ? `sort-${this.sortDirection}` : 'sort-indicator'}"
-                      data-column="${col.field}">
-                    ${col.title}
-                  </th>
-                `).join('')}
-              </tr>
-            </thead>
-            <tbody>
-              ${pageData.map((row, idx) => `
-                <tr id="row-${idx}">
-                  <td>
-                    <button class="edit-btn" data-row="${idx}">Edit</button>
-                  </td>
-                  ${visibleColumns.map(col => `
-                    <td class="data-cell" data-column="${col.field}">${row[col.field]}</td>
-                  `).join('')}
-                </tr>
-              `).join('')}
-            </tbody>
-            <tfoot>
-              <tr>
-                <td></td>
-                ${visibleColumns.map(col => `
-                  <td>
-                    ${col.searchType === 'select' ? 
-                      `<select class="column-search" data-column="${col.field}">
-                        <option value="">All</option>
-                        ${[...new Set(this.data.map(item => item[col.field]))].sort().map(value => 
-                          `<option value="${value}" ${this.columnSearchValues[col.field] === value ? 'selected' : ''}>${value}</option>`
-                        ).join('')}
-                      </select>` :
-                      `<input type="search" class="column-search" data-column="${col.field}" 
-                              value="${this.columnSearchValues[col.field] || ''}" 
-                              placeholder="Search ${col.title}...">`
-                    }
-                  </td>
-                `).join('')}
-              </tr>
-            </tfoot>
-          </table>
-					<nav>
-						<ul></ul>
-						<ul><li>
-		          <div class="pagination">
-    		        <button ${this.currentPage === 1 ? 'disabled' : ''} onclick="dataTable.currentPage--; dataTable.render()">Previous</button>
-      		      <span>Page ${this.currentPage} of ${Math.ceil(this.filteredData.length / this.config.rowsPerPage)}</span>
-          		  <button ${this.currentPage === Math.ceil(this.filteredData.length / this.config.rowsPerPage) ? 'disabled' : ''} 
-                    onclick="dataTable.currentPage++; dataTable.render()">Next</button>
-		          </div>
-						</li></ul>
-						<ul></ul>
-        `;
-
-        // Setup column search
-        this.config.container.querySelectorAll('.column-search').forEach(input => {
-          input.addEventListener('change', (e) => {  // Changed from 'input' to 'change'
-            const column = e.target.dataset.column;
-            const value = e.target.value;
-            if (value === '') {
-              delete this.columnSearchValues[column];
-            } else {
-              this.columnSearchValues[column] = value;
-            }
-            this.filterData();
-            this.currentPage = 1;
-            this.render();
-          });
-        });
-
-        // Setup sorting
-        this.config.container.querySelectorAll('.header-cell').forEach(header => {
-          header.addEventListener('click', () => {
-            const column = header.dataset.column;
-            this.sortData(column);
-          });
-        });
-
-        // Setup edit buttons
-        this.config.container.querySelectorAll('.edit-btn').forEach(btn => {
-          btn.addEventListener('click', () => {
-            const rowIndex = parseInt(btn.dataset.row);
-            const row = pageData[rowIndex];
-            
-            const tr = document.getElementById(`row-${rowIndex}`);
-            const originalContent = tr.innerHTML;
-            
-            tr.innerHTML = `
-              <td>
-                <button class="save-btn">Save</button>
-                <button class="cancel-btn">Cancel</button>
-              </td>
-              ${visibleColumns.map(col => `
-                <td>
-                  <input type="text" value="${row[col.field]}" data-field="${col.field}">
-                </td>
-              `).join('')}
-            `;
-
-            tr.querySelector('.save-btn').addEventListener('click', () => {
-              const updatedRow = {...row};
-              tr.querySelectorAll('input[data-field]').forEach(input => {
-                updatedRow[input.dataset.field] = input.value;
-              });
-              this.handleEdit(rowIndex, updatedRow);
-            });
-
-            tr.querySelector('.cancel-btn').addEventListener('click', () => {
-              tr.innerHTML = originalContent;
-            });
-          });
-        });
-      }
-    }
-
-    // Initialize with sample data
-    const dataTable = new DataTableViewer({
-      columns: [
-        { field: 'id', title: 'ID', searchType: 'text' },
-        { field: 'name', title: 'Name', searchType: 'text' },
-        { field: 'date', title: 'Date', type: 'date', searchType: 'text' },
-        { field: 'status', title: 'Status', searchType: 'select' }
-      ]
-    });
-  </script>
+		// Initialize with sample data
+		const dataTable = new DataTableViewer({
+			//dataUrl: config.dataUrl,
+			//editEndpoint: config.editEndpoint || '',
+			//extraEditData: config.extraEditData || {},
+			//onEditSuccess: config.onEditSuccess || ((response) => console.log('Edit success:', response)),
+			rowsPerPage: 5,
+			container: document.getElementById('tableContainer'),
+			columns: [
+				{ field: 'id', title: 'ID', searchType: 'text' },
+				{ field: 'name', title: 'Name', searchType: 'text' },
+				{ field: 'date', title: 'Date', type: 'date', searchType: 'text' },
+				{ field: 'status', title: 'Status', searchType: 'select' }
+			]
+		});
+	</script>
 </body>
 </html>
