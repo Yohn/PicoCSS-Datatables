@@ -11,6 +11,7 @@ Still has some cleaning up to do, but usable datatables.
  - editing rows
 
 ## TODO:
+ - I think splitting the thead, tbody, tfoot, and pagination functions to their own functions would be better than having them all in the render function.
  - Remove all id's so we're not constrained to using them
  - use svg for sorting icons
  - formatting with editing columns
