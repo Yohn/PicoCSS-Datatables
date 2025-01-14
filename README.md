@@ -19,3 +19,4 @@ Still has some cleaning up to do, but usable datatables.
  - more testing
  - switch to use pico dropdowns for column toggling
  - when editing a date / time column use browser datetime input type
+ - When row is edited we cant edit that row again - becasue event listeners arent attached anymore
