@@ -2,12 +2,18 @@ class DataTableViewer {
 	constructor(config) {
 		this.config = {
 			dataUrl: config.dataUrl,
+			dataJson: config.dataJson,
 			editEndpoint: config.editEndpoint || '',
+			deleteEndpoint: config.deleteEndpoint || '',
 			extraEditData: config.extraEditData || {},
+			extraDeleteData: config.extraDeleteData || {},
 			onEditSuccess: config.onEditSuccess || ((response) => console.log('Edit success:', response)),
+			onDeleteSuccess: config.onDeleteSuccess || ((response) => console.log('Delete success:', response)),
+			allowDelete: config.allowDelete || false,
 			columns: config.columns || [],
 			rowsPerPage: config.rowsPerPage || 10,
-			container: config.container || document.getElementById('tableContainer')
+			container: config.container || document.getElementById('tableContainer'),
+			customEditForm: config.customEditForm || null
 		};
 
 		this.data = [];
@@ -34,9 +40,39 @@ class DataTableViewer {
 			if (this.config.dataUrl) {
 				const response = await fetch(this.config.dataUrl);
 				this.data = await response.json();
+			} else if(this.config.dataJson){
+				this.data = this.config.dataJson;
 			} else {
-				// Use sample data for preview
-				this.data = sampleData;
+				// Check for existing table rows
+				const existingTable = this.config.container.querySelector('table');
+				if (existingTable) {
+					// Get headers first to map column fields
+					const headers = Array.from(existingTable.querySelectorAll('thead th'))
+						.map(th => th.textContent.trim());
+
+					// If no columns were provided in config, create them from headers
+					if (!this.config.columns.length) {
+						this.config.columns = headers.map(header => ({
+							field: header.toLowerCase().replace(/\s+/g, '_'),
+							title: header
+						}));
+					}
+
+					// Parse existing rows into data array
+					this.data = Array.from(existingTable.querySelectorAll('tbody tr')).map(row => {
+						const rowData = {};
+						row.querySelectorAll('td').forEach((cell, index) => {
+							const field = this.config.columns[index]?.field;
+							if (field) {
+								rowData[field] = cell.textContent.trim();
+							}
+						});
+						return rowData;
+					});
+				} else {
+					// No URL and no existing table, use empty array
+					this.data = [];
+				}
 			}
 			this.filteredData = [...this.data];
 		} catch (error) {
@@ -99,6 +135,7 @@ class DataTableViewer {
 			}
 		});
 	}
+
 	filterData() {
 		this.filteredData = this.data.filter(row => {
 			// Global search
@@ -149,7 +186,7 @@ class DataTableViewer {
 		this.render();
 	}
 
-	async handleEdit(rowIndex, row) {
+	async handleEdit(rowIndex, newRowData) {
 		try {
 			const response = await fetch(this.config.editEndpoint, {
 				method: 'POST',
@@ -157,7 +194,7 @@ class DataTableViewer {
 					'Content-Type': 'application/json'
 				},
 				body: JSON.stringify({
-					...row,
+					...newRowData,
 					...this.config.extraEditData
 				})
 			});
@@ -168,13 +205,45 @@ class DataTableViewer {
 			this.config.onEditSuccess(result);
 
 			// Update local data
-			Object.assign(this.data[rowIndex], row);
+			Object.assign(this.data[rowIndex], newRowData);
 			this.filterData();
 			this.render();
 
 		} catch (error) {
 			console.error('Error saving edit:', error);
 			alert('Failed to save changes');
+		}
+	}
+
+	async handleDelete(rowIndex, row) {
+		//let confirm =
+		if (!await showConfirm('Confirm','Are you sure you want to delete this row?')) return;
+
+		try {
+			const response = await fetch(this.config.deleteEndpoint, {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json'
+				},
+				body: JSON.stringify({
+					...row,
+					...this.config.extraDeleteData
+				})
+			});
+
+			if (!response.ok) throw new Error('Delete failed');
+
+			const result = await response.json();
+			this.config.onDeleteSuccess(result);
+
+			// Remove from local data
+			this.data.splice(rowIndex, 1);
+			this.filterData();
+			this.render();
+
+		} catch (error) {
+			console.error('Error deleting row:', error);
+			alert('Failed to delete row');
 		}
 	}
 
@@ -201,7 +270,8 @@ class DataTableViewer {
 					${pageData.map((row, idx) => `
 						<tr id="row-${idx}">
 							<td>
-								<button class="edit-btn" data-row="${idx}">Edit</button>
+								<button class="my-1 xp-2 edit-btn" data-row="${idx}" data-tooltip="Edit Row"><i class="bi bi-check-lg"></i></button>
+								${this.config.allowDelete ? `<button class="my-1 xp-2 contrast delete-btn" data-tooltip="Delete Row" data-row="${idx}"><i class="bi bi-x-lg"></i></button>` : ''}
 							</td>
 							${visibleColumns.map(col => `
 								<td class="data-cell" data-column="${col.field}">${row[col.field]}</td>
@@ -221,9 +291,11 @@ class DataTableViewer {
 					`<option value="${value}" ${this.columnSearchValues[col.field] === value ? 'selected' : ''}>${value}</option>`
 				).join('')}
 									</select>` :
+									col.searchType ===  'text' ?
 				`<input type="text" class="column-search" data-column="${col.field}"
 													value="${this.columnSearchValues[col.field] || ''}"
 													placeholder="Search ${col.title}...">`
+												: ''
 			}
 							</td>
 						`).join('')}
@@ -281,33 +353,51 @@ class DataTableViewer {
 				const rowIndex = parseInt(btn.dataset.row);
 				const row = pageData[rowIndex];
 
-				const tr = document.getElementById(`row-${rowIndex}`);
-				const originalContent = tr.innerHTML;
-
-				tr.innerHTML = `
-					<td>
-						<button class="save-btn">Save</button>
-						<button class="cancel-btn">Cancel</button>
-					</td>
-					${visibleColumns.map(col => `
-						<td>
-							<input type="text" value="${row[col.field]}" data-field="${col.field}">
-						</td>
-					`).join('')}
-				`;
-
-				tr.querySelector('.save-btn').addEventListener('click', () => {
-					const updatedRow = { ...row };
-					tr.querySelectorAll('input[data-field]').forEach(input => {
-						updatedRow[input.dataset.field] = input.value;
+				if (this.config.customEditForm) {
+					// Call the custom edit form function with the row data and a callback
+					this.config.customEditForm(row, (updatedRowData) => {
+						this.handleEdit(rowIndex, updatedRowData);
 					});
-					this.handleEdit(rowIndex, updatedRow);
-				});
+				} else {
+					// Original inline editing logic
+					const tr = document.getElementById(`row-${rowIndex}`);
+					const originalContent = tr.innerHTML;
 
-				tr.querySelector('.cancel-btn').addEventListener('click', () => {
-					tr.innerHTML = originalContent;
-				});
+					tr.innerHTML = `
+						<td>
+							<button class="save-btn">Save</button>
+							<button class="cancel-btn">Cancel</button>
+						</td>
+						${visibleColumns.map(col => `
+							<td>
+								<input type="text" value="${row[col.field]}" data-field="${col.field}">
+							</td>
+						`).join('')}
+					`;
+
+					tr.querySelector('.save-btn').addEventListener('click', () => {
+						const updatedRow = { ...row };
+						tr.querySelectorAll('input[data-field]').forEach(input => {
+							updatedRow[input.dataset.field] = input.value;
+						});
+						this.handleEdit(rowIndex, updatedRow);
+					});
+
+					tr.querySelector('.cancel-btn').addEventListener('click', () => {
+						tr.innerHTML = originalContent;
+					});
+				}
 			});
 		});
+
+		if (this.config.allowDelete) {
+			this.config.container.querySelectorAll('.delete-btn').forEach(btn => {
+				btn.addEventListener('click', () => {
+					const rowIndex = parseInt(btn.dataset.row);
+					const row = pageData[rowIndex];
+					this.handleDelete(rowIndex, row);
+				});
+			});
+		}
 	}
 }
